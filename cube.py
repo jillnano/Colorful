@@ -288,6 +288,34 @@ def mixSift(img, img_gray, img_origin):
 				img[y][x] = img_origin[y][x] * rate * 0.8
 	return img
 
+def StartCube(opt_sift, opt_obj, opt_bg, opt_mix, opt_alpha, opt_out):
+	if opt_sift:
+		taskId = '%s_'%random.randint(1000, 9999)
+		trimap = makeSift(opt_obj, taskId)
+		alphaname = matting_with_trimap(opt_obj, trimap, taskId)
+		# for i in glob('tmp/%s*'%taskId):
+		# 	os.remove(i)
+		grayImg = cv2.imread(alphaname, 0)
+		if opt_mix:
+			objImg = cv2.imread(opt_obj)
+			bgImg = cv2.imread(opt_bg)
+			mixed_clone = mixClone(objImg, bgImg, float(opt_alpha))
+			mixed_clone = blue2red(mixed_clone)
+			mixed_clone = histColor(mixed_clone)
+			mixImg = mixSift(mixed_clone, grayImg, objImg)
+			outImg = histYUV(mixImg)
+		else:
+			outImg = mixClone(grayImg, bgImg, float(opt_alpha))
+	else:
+		objImg = cv2.imread(opt_obj)
+		# objImg = cv2.imread('tmp/6474_zbnwl.jpg')
+		bgImg = cv2.imread(opt_bg)
+		mixed_clone = mixClone(objImg, bgImg, float(opt_alpha))
+		mixed_clone = blue2red(mixed_clone)
+		outImg = histYUV(mixImg)
+	cv2.imwrite(opt_out, outImg)
+
+
 if __name__ == '__main__':
 	USAGE = 'usage: python cube.py'
 	parser = OptionParser(USAGE)
@@ -299,28 +327,4 @@ if __name__ == '__main__':
 	parser.add_option('--sift', action = 'store_true', dest = 'sift', default = False)
 	parser.add_option('--mix', action = 'store_true', dest = 'mix', default = False)
 	opt, args = parser.parse_args()
-	if opt.sift:
-		taskId = '%s_'%random.randint(1000, 9999)
-		trimap = makeSift(opt.obj, taskId)
-		alphaname = matting_with_trimap(opt.obj, trimap, taskId)
-		# for i in glob('tmp/%s*'%taskId):
-		# 	os.remove(i)
-		grayImg = cv2.imread(alphaname, 0)
-		if opt.mix:
-			objImg = cv2.imread(opt.obj)
-			bgImg = cv2.imread(opt.bg)
-			mixed_clone = mixClone(objImg, bgImg, float(opt.alpha))
-			mixed_clone = blue2red(mixed_clone)
-			mixed_clone = histColor(mixed_clone)
-			mixImg = mixSift(mixed_clone, grayImg, objImg)
-			outImg = histYUV(mixImg)
-		else:
-			outImg = mixClone(grayImg, bgImg, float(opt.alpha))
-	else:
-		objImg = cv2.imread(opt.obj)
-		# objImg = cv2.imread('tmp/6474_zbnwl.jpg')
-		bgImg = cv2.imread(opt.bg)
-		mixed_clone = mixClone(objImg, bgImg, float(opt.alpha))
-		mixed_clone = blue2red(mixed_clone)
-		outImg = histYUV(mixImg)
-	cv2.imwrite(opt.out, outImg)
+	StartCube(opt.sift, opt.obj, opt.bg, opt.mix, opt.alpha, opt.out)
