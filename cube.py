@@ -285,7 +285,7 @@ def mixSift(img, img_gray, img_origin):
 		for x in xrange(w):
 			if img_gray[y][x] > 200:
 				rate = img_gray[y][x] / 255.0
-				img[y][x] = img_origin[y][x] * rate * 0.8
+				img[y][x] = img[y][x] * (1 - rate) + img_origin[y][x] * rate
 	return img
 
 def StartCube(opt_sift, opt_obj, opt_bg, opt_mix, opt_alpha, opt_out):
