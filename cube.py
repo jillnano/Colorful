@@ -147,7 +147,7 @@ def mixClone(objImg, bgImg, objRate = 1.0):
 	return mixed_clone
 
 	# Write results
-	mixed_clone = blue2red(mixed_clone)
+	# mixed_clone = blue2red(mixed_clone)
 	# mixed_clone = red2blue(mixed_clone, 156, 180)
 	# mixed_clone = red2blue(mixed_clone, 0, 10)
 	# mixed_clone = red2blue(mixed_clone, 0, 10)
@@ -283,10 +283,29 @@ def mixSift(img, img_gray, img_origin):
 	h, w = img.shape[0:2]
 	for y in xrange(h):
 		for x in xrange(w):
-			if img_gray[y][x] > 200:
+			if img_gray[y][x] > 0:
 				rate = img_gray[y][x] / 255.0
 				img[y][x] = img[y][x] * (1 - rate) + img_origin[y][x] * rate
 	return img
+
+def fillBlack(origin_img, new_img):
+	# newImg = np.zeros(origin_img.shape)
+	# newImg[:] = 255
+	alpha = 0.5
+	gray_img = cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY)
+	mask = cv2.inRange(gray_img, 0, 0)
+	white = mask[mask == 255].shape[0]
+	total = mask.shape[0] * mask.shape[1]
+	rate = white / float(total)
+	# cv2.imwrite('mask.jpg', mask)
+	h, w = gray_img.shape[0:2]
+	if rate > 0.2:
+		for y in xrange(h):
+			for x in xrange(w):
+				if mask[y][x] == 255:
+					new_img[y][x] = new_img[y][x] * (1 - alpha) + origin_img[y][x] * alpha
+					# new_img[y][x] = [255, 255, 255]
+	return new_img
 
 def StartCube(opt_sift, opt_obj, opt_bg, opt_mix, opt_alpha, opt_out):
 	if opt_sift:
@@ -296,14 +315,15 @@ def StartCube(opt_sift, opt_obj, opt_bg, opt_mix, opt_alpha, opt_out):
 		# for i in glob('tmp/%s*'%taskId):
 		# 	os.remove(i)
 		grayImg = cv2.imread(alphaname, 0)
+		bgImg = cv2.imread(opt_bg)
 		if opt_mix:
 			objImg = cv2.imread(opt_obj)
-			bgImg = cv2.imread(opt_bg)
 			mixed_clone = mixClone(objImg, bgImg, float(opt_alpha))
 			mixed_clone = blue2red(mixed_clone)
 			mixed_clone = histColor(mixed_clone)
 			mixImg = mixSift(mixed_clone, grayImg, objImg)
 			outImg = histYUV(mixImg)
+			outImg = fillBlack(objImg, outImg)
 		else:
 			outImg = mixClone(grayImg, bgImg, float(opt_alpha))
 	else:
