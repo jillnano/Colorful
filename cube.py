@@ -307,6 +307,33 @@ def fillBlack(origin_img, new_img):
 					# new_img[y][x] = [255, 255, 255]
 	return new_img
 
+def fixRed(origin_img, new_img):
+	alpha = 0.9
+	maxRate = 1
+	bgImg = cv2.imread('bg/black.jpg')
+	mixed_clone = mixClone(origin_img, bgImg)
+	mixed_clone = blue2red(mixed_clone)
+	mixed_clone = histColor(mixed_clone)
+	hsv = cv2.cvtColor(mixed_clone, cv2.COLOR_BGR2HSV)
+	mask1 = cv2.inRange(hsv, (0, 43, 46), (10, 255, 255))
+	mask2 = cv2.inRange(hsv, (156, 43, 46), (180, 255, 255))
+	mask = mask1 + mask2
+	h, w = mask.shape[0:2]
+	rateList = []
+	for y in xrange(h):
+		for x in xrange(w):
+			if mask[y][x] == 255:
+				rate = hsv[y][x][2] / 255.0
+				rateList.append(rate)
+	maxRate = max(rateList)
+	r = 1.0 / maxRate
+	for y in xrange(h):
+		for x in xrange(w):
+			if mask[y][x] == 255:
+				rate = hsv[y][x][2] / 255.0 * r
+				new_img[y][x] = new_img[y][x] * (1 - rate) + origin_img[y][x] * rate
+	return new_img
+
 def StartCube(opt_sift, opt_obj, opt_bg, opt_mix, opt_alpha, opt_out):
 	if opt_sift:
 		taskId = '%s_'%random.randint(1000, 9999)
@@ -322,7 +349,10 @@ def StartCube(opt_sift, opt_obj, opt_bg, opt_mix, opt_alpha, opt_out):
 			mixed_clone = blue2red(mixed_clone)
 			mixed_clone = histColor(mixed_clone)
 			mixImg = mixSift(mixed_clone, grayImg, objImg)
-			outImg = histYUV(mixImg)
+			# cv2.imwrite(opt_out + '_1', mixImg)
+			# cv2.imwrite(opt_out + '_2', outImg)
+			outImg = fixRed(objImg, mixImg)
+			outImg = histYUV(outImg)
 			outImg = fillBlack(objImg, outImg)
 		else:
 			outImg = mixClone(grayImg, bgImg, float(opt_alpha))
@@ -332,7 +362,9 @@ def StartCube(opt_sift, opt_obj, opt_bg, opt_mix, opt_alpha, opt_out):
 		bgImg = cv2.imread(opt_bg)
 		mixed_clone = mixClone(objImg, bgImg, float(opt_alpha))
 		mixed_clone = blue2red(mixed_clone)
-		outImg = histYUV(mixImg)
+		outImg = fixRed(objImg, mixed_clone)
+		outImg = histYUV(outImg)
+		outImg = fillBlack(objImg, outImg)
 	cv2.imwrite(opt_out, outImg)
 
 
